@@ -69,12 +69,13 @@ class Products with ChangeNotifier {
   // }
 
   Future<void> fetchAndSetProducts() async {
-    const url = 'https://buy-it-186b8-default-rtdb.firebaseio.com/products.json';
+    const url =
+        'https://buy-it-186b8-default-rtdb.firebaseio.com/products.json';
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       final List<Product> loadedProducts = [];
-      (extractedData??{}).forEach((prodId, prodData) {
+      (extractedData ?? {}).forEach((prodId, prodData) {
         loadedProducts.add(Product(
           id: prodId,
           title: prodData['title'],
@@ -92,7 +93,8 @@ class Products with ChangeNotifier {
   }
 
   Future<void> addProduct(Product product) async {
-    const url = 'https://buy-it-186b8-default-rtdb.firebaseio.com/products.json';
+    const url =
+        'https://buy-it-186b8-default-rtdb.firebaseio.com/products.json';
     try {
       final response = await http.post(
         url,
@@ -123,7 +125,8 @@ class Products with ChangeNotifier {
   Future<void> updateProduct(String id, Product newProduct) async {
     final prodIndex = _items.indexWhere((prod) => prod.id == id);
     if (prodIndex >= 0) {
-      final url = 'https://buy-it-186b8-default-rtdb.firebaseio.com/products/$id.json';
+      final url =
+          'https://buy-it-186b8-default-rtdb.firebaseio.com/products/$id.json';
       await http.patch(url,
           body: json.encode({
             'title': newProduct.title,
@@ -139,7 +142,8 @@ class Products with ChangeNotifier {
   }
 
   Future<void> deleteProduct(String id) async {
-    final url = 'https://buy-it-186b8-default-rtdb.firebaseio.com/products/$id.json';
+    final url =
+        'https://buy-it-186b8-default-rtdb.firebaseio.com/products/$id.json';
     final existingProductIndex = _items.indexWhere((prod) => prod.id == id);
     var existingProduct = _items[existingProductIndex];
     _items.removeAt(existingProductIndex);
