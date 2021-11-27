@@ -1,12 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-
-import './cart.dart';
 import 'package:http/http.dart' as http;
 
-const ordersUrl =
-    'https://buy-it-186b8-default-rtdb.firebaseio.com/orders.json';
+import './cart.dart';
 
 class OrderItem {
   final String id;
@@ -20,11 +17,6 @@ class OrderItem {
     @required this.products,
     @required this.dateTime,
   });
-  Map<String, dynamic> toJson() => {
-        'amount': amount,
-        'products': products.map((e) => e.toJson()).toList(),
-        'dateTime': dateTime.toString(),
-      };
 }
 
 class Orders with ChangeNotifier {
@@ -34,18 +26,64 @@ class Orders with ChangeNotifier {
     return [..._orders];
   }
 
-  void addOrder(List<CartItem> cartProducts, double total) async {
-    var orderDto = OrderItem(
-      id: DateTime.now().toString(),
-      amount: total,
-      dateTime: DateTime.now(),
-      products: cartProducts,
-    );
-    final response =
-        await http.post(ordersUrl, body: jsonEncode(orderDto.toJson()));
-    if (response.statusCode == 200) {
-      _orders.insert(0, orderDto);
-      notifyListeners();
+  Future<void> fetchAndSetOrders() async {
+    final url = Uri.https('flutter-update.firebaseio.com', '/orders.json');
+    final response = await http.get(url);
+    final List<OrderItem> loadedOrders = [];
+    final extractedData = json.decode(response.body) as Map<String, dynamic>;
+    if (extractedData == null) {
+      return;
     }
+    extractedData.forEach((orderId, orderData) {
+      loadedOrders.add(
+        OrderItem(
+          id: orderId,
+          amount: orderData['amount'],
+          dateTime: DateTime.parse(orderData['dateTime']),
+          products: (orderData['products'] as List<dynamic>)
+              .map(
+                (item) => CartItem(
+                      id: item['id'],
+                      price: item['price'],
+                      quantity: item['quantity'],
+                      title: item['title'],
+                    ),
+              )
+              .toList(),
+        ),
+      );
+    });
+    _orders = loadedOrders.reversed.toList();
+    notifyListeners();
+  }
+
+  Future<void> addOrder(List<CartItem> cartProducts, double total) async {
+    final url = Uri.https('flutter-update.firebaseio.com', '/orders.json');
+    final timestamp = DateTime.now();
+    final response = await http.post(
+      url,
+      body: json.encode({
+        'amount': total,
+        'dateTime': timestamp.toIso8601String(),
+        'products': cartProducts
+            .map((cp) => {
+                  'id': cp.id,
+                  'title': cp.title,
+                  'quantity': cp.quantity,
+                  'price': cp.price,
+                })
+            .toList(),
+      }),
+    );
+    _orders.insert(
+      0,
+      OrderItem(
+        id: json.decode(response.body)['name'],
+        amount: total,
+        dateTime: timestamp,
+        products: cartProducts,
+      ),
+    );
+    notifyListeners();
   }
 }
